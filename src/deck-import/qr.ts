@@ -23,6 +23,20 @@ async function decodeImage(reader: BrowserQRCodeReader, image: HTMLImageElement)
   return result.getText();
 }
 
+async function canvasImage(canvas: HTMLCanvasElement) {
+  return loadImage(canvas.toDataURL('image/png'));
+}
+
+async function topRightCandidate(image: HTMLImageElement) {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(image.naturalWidth * 0.55);
+  canvas.height = Math.ceil(image.naturalHeight * 0.55);
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  context.drawImage(image, image.naturalWidth - canvas.width, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  return canvasImage(canvas);
+}
+
 export async function decodeDeckPortalQr(file: File): Promise<string> {
   validateQrImage(file);
   const objectUrl = URL.createObjectURL(file);
@@ -31,6 +45,8 @@ export async function decodeDeckPortalQr(file: File): Promise<string> {
     if (image.naturalWidth * image.naturalHeight > maxPixels) throw new Error('画像の総画素数が大きすぎます。');
     const reader = new BrowserQRCodeReader();
     const attempts: HTMLImageElement[] = [image];
+    const topRight = await topRightCandidate(image);
+    if (topRight) attempts.push(topRight);
     for (const angle of [90, 180, 270]) {
       const canvas = document.createElement('canvas');
       const swapped = angle % 180 !== 0;
@@ -41,7 +57,7 @@ export async function decodeDeckPortalQr(file: File): Promise<string> {
       context.translate(canvas.width / 2, canvas.height / 2);
       context.rotate((angle * Math.PI) / 180);
       context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
-      attempts.push(await loadImage(canvas.toDataURL('image/png')));
+      attempts.push(await canvasImage(canvas));
     }
     for (const candidate of attempts) {
       try {
