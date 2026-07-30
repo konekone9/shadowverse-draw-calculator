@@ -1,29 +1,19 @@
 import { validateDeckPortalUrl } from './portal-url';
 
-export type DeckCard = { code: string; name: string; quantity: number };
-export type DecodedDeck = { format: 'rotation'; className: 'witch'; cards: DeckCard[]; total: number };
+export type DeckCard = { id: number; name: string; quantity: number; cost: number | null; type: number | null; class: number | null };
+export type DecodedDeck = { format: 'rotation' | 'unlimited' | 'infinity' | 'starter'; classId: number; cards: DeckCard[]; total: number };
 
-// This registry is generated from the verified Deck Portal vector in the test suite.
-// Unknown codes intentionally fail closed until card-master data adds them.
-const knownCards: Record<string, string> = {
-  cH3E: '大遊戯世界', cfTu: '知恵の輝き', e4Gg: '睦まやかな団欒', eB7k: '鋼鉄の微睡み',
-  eBKO: '余情の俳人', eBpU: '笑いの雷霆・ジンジャー', eBpe: '歩む〈愚者〉・リンクル', fDXk: '相承の意思',
-  fKZk: 'ストームブラスト', fKcs: '明越花の転変', fKpM: 'マナリアスクリプター・ティコ',
-  fKsU: 'ハッピーフラワー・サミー＆マリー', 'fL2-': '恩愛の大地・チトラ＆ティカ', fL38: '明滅花・アラ',
-};
+const proxyUrl = 'https://shadowverse-draw-deck-proxy.komekome1048576.workers.dev/deck';
+const formats: Record<number, DecodedDeck['format']> = { 1: 'rotation', 2: 'unlimited', 3: 'infinity', 4: 'starter' };
+type ProxyDeck = { classId: number; battleFormat: number; cards: DeckCard[] };
 
-export function decodeDeckPortalUrl(input: string): DecodedDeck {
+export async function decodeDeckPortalUrl(input: string, request: typeof fetch = fetch): Promise<DecodedDeck> {
   const { hash } = validateDeckPortalUrl(input);
-  const [format, classCode, ...codes] = hash.split('.');
-  if (format !== '1') throw new Error('未知のフォーマットです。');
-  if (classCode !== '3') throw new Error('この初期カードマスターではウィッチ以外を復号できません。');
-  if (codes.length !== 40 || codes.some((code) => !/^[0-9A-Za-z_-]{4}$/.test(code))) throw new Error('40枚のDeck Portal hashではありません。');
-  const unknown = codes.find((code) => !knownCards[code]);
-  if (unknown) throw new Error(`未登録のカードコードです: ${unknown}`);
-  const quantities = new Map<string, number>();
-  codes.forEach((code) => quantities.set(code, (quantities.get(code) ?? 0) + 1));
-  return {
-    format: 'rotation', className: 'witch', total: codes.length,
-    cards: [...quantities.entries()].map(([code, quantity]) => ({ code, name: knownCards[code], quantity })).sort((a, b) => a.name.localeCompare(b.name, 'ja')),
-  };
+  const response = await request(`${proxyUrl}?hash=${encodeURIComponent(hash)}`);
+  if (!response.ok) throw new Error('公式Deck Portalからデッキを取得できませんでした。URLを確認して再試行してください。');
+  const data = await response.json() as ProxyDeck;
+  if (!Array.isArray(data.cards) || !Number.isInteger(data.classId) || !formats[data.battleFormat]) throw new Error('Deck Portalの応答を検証できませんでした。');
+  const total = data.cards.reduce((sum, card) => sum + card.quantity, 0);
+  if (total !== 40 || data.cards.some((card) => !Number.isInteger(card.id) || !Number.isInteger(card.quantity) || card.quantity < 1 || typeof card.name !== 'string')) throw new Error('40枚の有効なデッキではありません。');
+  return { classId: data.classId, format: formats[data.battleFormat], cards: [...data.cards].sort((a, b) => a.name.localeCompare(b.name, 'ja')), total };
 }
