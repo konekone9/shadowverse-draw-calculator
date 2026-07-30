@@ -6,8 +6,8 @@ export type DecodedDeck = { format: 'rotation'; className: 'witch'; cards: DeckC
 // This registry is generated from the verified Deck Portal vector in the test suite.
 // Unknown codes intentionally fail closed until card-master data adds them.
 const knownCards: Record<string, string> = {
-  cH3E: '大遊戯世界', cfTu: '知恵の輝き', e4Gg: '相承の意思', eB7k: '睦まやかな団欒',
-  eBKO: '鋼鉄の微睡み', eBpU: '余情の俳人', eBpe: '笑いの雷霆・ジンジャー', fDXk: '歩む〈愚者〉・リンクル',
+  cH3E: '大遊戯世界', cfTu: '知恵の輝き', e4Gg: '睦まやかな団欒', eB7k: '鋼鉄の微睡み',
+  eBKO: '余情の俳人', eBpU: '笑いの雷霆・ジンジャー', eBpe: '歩む〈愚者〉・リンクル', fDXk: '相承の意思',
   fKZk: 'ストームブラスト', fKcs: '明越花の転変', fKpM: 'マナリアスクリプター・ティコ',
   fKsU: 'ハッピーフラワー・サミー＆マリー', 'fL2-': '恩愛の大地・チトラ＆ティカ', fL38: '明滅花・アラ',
 };
