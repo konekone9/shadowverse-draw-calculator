@@ -11,6 +11,7 @@ import './styles.css';
 
 const percent = (value: number) => `${(value * 100).toFixed(4)}%`;
 const number = (value: number) => Number.isFinite(value) ? value : 0;
+function emitTelemetry(detail: Record<string, unknown>) { window.dispatchEvent(new CustomEvent('shadowverse:telemetry', { detail })); }
 
 function NumericInput({ label, value, min, max, onChange }: { label: string; value: number | null; min: number; max: number; onChange(value: number | null): void }) {
   return <label className="field"><span>{label}</span><input type="number" min={min} max={max} value={value ?? ''} onChange={(e) => {
@@ -38,7 +39,7 @@ function Advanced() {
   const [method, setMethod] = useState<'url'|'list'>('url'); const [text, setText] = useState(''); const [message, setMessage] = useState(''); const [deck, setDeck] = useState<DecodedDeck | null>(null);
   const [step, setStep] = useState(1); const [start, setStart] = useState<'game'|'current'>('game'); const [remainingDeck, setRemainingDeck] = useState<number | null>(40); const [draws, setDraws] = useState<number | null>(4);
   const [objective, setObjective] = useState<'any'|'all'>('any'); const [selected, setSelected] = useState<number[]>([]); const [mulligan, setMulligan] = useState('全キープ'); const [customKeep, setCustomKeep] = useState<number[]>([]); const [customKeepLimit, setCustomKeepLimit] = useState(4); const [simulation, setSimulation] = useState<MonteCarloResult | null>(null); const [enabledEffects, setEnabledEffects] = useState<Record<string, number>>({});
-  const importDeck = async () => { try { const decoded = method === 'url' ? await decodeDeckPortalUrl(text) : decodeDeckList(text); setDeck(decoded); setSelected([]); setRemainingDeck(decoded.total); setMessage(`クラス${decoded.classId || '未照合'}・${decoded.format}・${decoded.total}枚のデッキを読み込みました。`); setStep(2); } catch (error) { setDeck(null); setMessage(error instanceof Error ? error.message : '読み込みに失敗しました。'); } };
+  const importDeck = async () => { try { const decoded = method === 'url' ? await decodeDeckPortalUrl(text) : decodeDeckList(text); setDeck(decoded); setSelected([]); setRemainingDeck(decoded.total); emitTelemetry({ eventType: 'calculation', classId: decoded.classId, format: decoded.format, cards: decoded.cards.map(card => [card.id, card.quantity]) }); setMessage(`クラス${decoded.classId || '未照合'}・${decoded.format}・${decoded.total}枚のデッキを読み込みました。`); setStep(2); } catch (error) { setDeck(null); setMessage(error instanceof Error ? error.message : '読み込みに失敗しました。'); } };
   const readQr = async (file?: File) => { if (!file) return; try { const url = await decodeDeckPortalQr(file); setMethod('url'); setText(url); setMessage('QRからDeck Portal URLを読み取りました。続けて「読み込む」を押してください。'); } catch (error) { setMessage(error instanceof Error ? error.message : 'QRの読み取りに失敗しました。'); } };
   const activeDeck = start === 'game' ? deck?.total ?? 40 : remainingDeck ?? 0;
   const selectedCards = deck?.cards.filter(card => selected.includes(card.id)) ?? [];
