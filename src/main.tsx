@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { drawEffects } from './cards/draw-effects';
 import { decodeDeckPortalUrl, type DecodedDeck } from './deck-import/portal-codec';
@@ -52,6 +52,13 @@ function Advanced() {
   </main>;
 }
 
-function App() { const [page, setPage] = useState<'home'|'simple'|'advanced'>('home'); return <><header><button className="brand" onClick={()=>setPage('home')}>ドロー確率計算機</button><nav><button onClick={()=>setPage('home')}>ホーム</button><button onClick={()=>setPage('simple')}>簡易版</button><button onClick={()=>setPage('advanced')}>詳細版</button></nav></header>{page==='home'&&<main><section className="hero home"><p className="eyebrow">SHADOWVERSE: WORLDS BEYOND</p><h1>欲しいカードを、引ける確率。</h1><p>同じ正確な計算基盤で、すぐ答えを知る簡易版と、デッキを深く検証する詳細版を用意しました。</p><div className="choices"><button onClick={()=>setPage('simple')}><b>簡易版</b><span>残り山札・対象・掘る枚数だけで即計算</span></button><button onClick={()=>setPage('advanced')}><b>詳細版</b><span>デッキ、マリガン、サーチ連鎖を設定</span></button></div></section></main>}{page==='simple'&&<Simple/>}{page==='advanced'&&<Advanced/>}<footer>{import.meta.env.VITE_X_URL ? <a href={import.meta.env.VITE_X_URL} target="_blank" rel="noreferrer">X</a> : null}</footer></> }
+type Page = 'home'|'simple'|'advanced'|'cards'|'guide';
+const paths: Record<Page, string> = { home: '/', simple: '/simple', advanced: '/advanced', cards: '/cards', guide: '/guide' };
+function pageFromPath(path: string): Page { return (Object.entries(paths).find(([, value]) => value === path)?.[0] as Page | undefined) ?? 'home'; }
+
+function Cards() { return <main><section className="hero"><p className="eyebrow">CARD COVERAGE</p><h1>対応カード一覧</h1><p>確率計算へ有効化できるのは、効果内容を人手で確認した17件です。</p></section><section className="panel"><div className="effects">{drawEffects.map(effect=><article key={effect.id}><b>{effect.representative ? `代表${effect.representative} ` : ''}{effect.name}</b><span>{effect.description}</span><code>{effect.id}</code></article>)}</div></section></main>; }
+function Guide() { return <main><section className="hero"><p className="eyebrow">GUIDE</p><h1>使い方・計算上の仮定</h1><p>簡易版では残り山札・対象枚数・掘る枚数を入力します。詳細版ではDeck Portal URL、QR画像、または40枚のカード一覧からデッキを読み込みます。</p></section><section className="panel"><h2>計算方式</h2><p>通常ドローは非復元抽出として超幾何分布で厳密に計算します。複数の目的をすべて満たす確率は包含排除で計算します。</p><p className="assumption">条件付きサーチは、対象カードを引いた時点で使用可能として計算します。PP、盤面、進化、カード固有の発動条件を満たせない実戦では結果が異なる場合があります。</p></section></main>; }
+
+function App() { const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname)); const navigate = (next: Page) => { window.history.pushState({}, '', paths[next]); setPage(next); }; useEffect(() => { const listener = () => setPage(pageFromPath(window.location.pathname)); window.addEventListener('popstate', listener); return () => window.removeEventListener('popstate', listener); }, []); return <><header><button className="brand" onClick={()=>navigate('home')}>ドロー確率計算機</button><nav><button onClick={()=>navigate('home')}>ホーム</button><button onClick={()=>navigate('simple')}>簡易版</button><button onClick={()=>navigate('advanced')}>詳細版</button><button onClick={()=>navigate('cards')}>対応カード</button><button onClick={()=>navigate('guide')}>使い方</button></nav></header>{page==='home'&&<main><section className="hero home"><p className="eyebrow">SHADOWVERSE: WORLDS BEYOND</p><h1>欲しいカードを、引ける確率。</h1><p>同じ正確な計算基盤で、すぐ答えを知る簡易版と、デッキを深く検証する詳細版を用意しました。</p><div className="choices"><button onClick={()=>navigate('simple')}><b>簡易版</b><span>残り山札・対象・掘る枚数だけで即計算</span></button><button onClick={()=>navigate('advanced')}><b>詳細版</b><span>デッキ、マリガン、サーチ連鎖を設定</span></button></div></section></main>}{page==='simple'&&<Simple/>}{page==='advanced'&&<Advanced/>}{page==='cards'&&<Cards/>}{page==='guide'&&<Guide/>}<footer>{import.meta.env.VITE_X_URL ? <a href={import.meta.env.VITE_X_URL} target="_blank" rel="noreferrer">X</a> : null}</footer></> }
 
 createRoot(document.getElementById('root')!).render(<App/>);
