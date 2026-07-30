@@ -15,6 +15,6 @@ npm run build
 
 Cloudflare Pages のビルド設定は、ビルドコマンド `npm run build`、出力ディレクトリ `dist` です。
 
-フッターの X リンクは、Cloudflare Pages の環境変数 `VITE_X_URL` で設定します。未設定時にはフッターへリンクを表示しません。
+フッターの X リンクは、公開用設定の `VITE_X_URL` で指定します。
 
 このリポジトリには、収集API、D1、認証情報、管理画面、本番収集スクリプトを含めません。
