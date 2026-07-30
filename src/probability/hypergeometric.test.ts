@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allGroupsSuccess, filteredSearchSuccess, hypergeometric, targetOnlyKeepMulligan } from './hypergeometric';
+import { allGroupsSuccess, allReturnMulligan, filteredSearchSuccess, hypergeometric, targetOnlyKeepMulligan } from './hypergeometric';
 
 describe('hypergeometric', () => {
   it('calculates the specified 30 / 3 / 10 example', () => {
@@ -21,5 +21,11 @@ describe('hypergeometric', () => {
   it('calculates every selected target group with inclusion-exclusion', () => {
     expect(allGroupsSuccess(4, [1, 1], 2)).toBeCloseTo(1 / 6, 12);
     expect(allGroupsSuccess(40, [3], 4)).toBeCloseTo(hypergeometric(40, 3, 4).atLeastOne, 12);
+  });
+  it('calculates all-return mulligans without redrawing the same initial entities', () => {
+    const result = allReturnMulligan(40, 3, 0);
+    expect(result.exact.reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 12);
+    expect(result.atLeastOne).toBeGreaterThan(0);
+    expect(allReturnMulligan(40, 0, 0).atLeastOne).toBe(0);
   });
 });

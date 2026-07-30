@@ -63,3 +63,18 @@ export function targetOnlyKeepMulligan(deck: number, targets: number, draws: num
   }
   return { exact, atLeastOne: 1 - (exact[0] ?? 1), expected: exact.reduce((total, probability, count) => total + probability * count, 0) };
 }
+
+/** 初手4枚を全て引き直した後に通常ドローする分布。引き直し中は同じカード実体を引かない。 */
+export function allReturnMulligan(deck: number, targets: number, draws: number): Distribution {
+  if (!Number.isInteger(deck) || !Number.isInteger(targets) || !Number.isInteger(draws) || deck < 4 || targets < 0 || targets > deck || draws < 0 || draws > deck - 4) throw new RangeError('マリガン計算の入力が不正です。');
+  const exact = Array.from({ length: Math.min(targets, 4 + draws) + 1 }, () => 0);
+  const initial = hypergeometric(deck, targets, 4).exact;
+  for (let firstTargets = 0; firstTargets < initial.length; firstTargets += 1) {
+    const redraw = hypergeometric(deck - 4, targets - firstTargets, 4).exact;
+    for (let redrawTargets = 0; redrawTargets < redraw.length; redrawTargets += 1) {
+      const later = hypergeometric(deck - 4, targets - redrawTargets, draws).exact;
+      for (let laterTargets = 0; laterTargets < later.length; laterTargets += 1) exact[redrawTargets + laterTargets] += initial[firstTargets] * redraw[redrawTargets] * later[laterTargets];
+    }
+  }
+  return { exact, atLeastOne: 1 - (exact[0] ?? 1), expected: exact.reduce((total, probability, count) => total + probability * count, 0) };
+}
