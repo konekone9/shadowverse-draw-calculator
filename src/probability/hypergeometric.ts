@@ -29,6 +29,21 @@ export function filteredSearchSuccess(candidates: number, targetCandidates: numb
   return hypergeometric(candidates, targetCandidates, Math.min(candidates, count)).atLeastOne;
 }
 
+/** それぞれ別の目的グループを1枚以上引く確率（包含排除）。 */
+export function allGroupsSuccess(deck: number, groupCounts: number[], draws: number): number {
+  if (!Number.isInteger(deck) || !Number.isInteger(draws) || deck < 1 || draws < 0 || draws > deck || !groupCounts.length || groupCounts.some((count) => !Number.isInteger(count) || count < 1) || groupCounts.reduce((sum, count) => sum + count, 0) > deck) throw new RangeError('複数目的の入力が不正です。');
+  const denominator = combination(deck, draws);
+  let probability = 0;
+  const subsets = 1 << groupCounts.length;
+  for (let mask = 0; mask < subsets; mask += 1) {
+    let absent = 0; let bits = 0;
+    for (let index = 0; index < groupCounts.length; index += 1) if (mask & (1 << index)) { absent += groupCounts[index]; bits += 1; }
+    const term = combination(deck - absent, draws) / denominator;
+    probability += bits % 2 === 0 ? term : -term;
+  }
+  return Math.max(0, Math.min(1, probability));
+}
+
 /** 初手4枚から目的カードだけをキープして引き直した後に通常ドローする分布。 */
 export function targetOnlyKeepMulligan(deck: number, targets: number, draws: number): Distribution {
   if (!Number.isInteger(deck) || !Number.isInteger(targets) || !Number.isInteger(draws) || deck < 4 || targets < 0 || targets > deck || draws < 0 || draws > deck - 4) {
