@@ -1,6 +1,6 @@
 import { wilsonInterval, type MonteCarloResult } from './monte-carlo';
 
-export type MulliganSimulationInput = { cardCounts: Array<{ id: number; quantity: number }>; targets: number[]; requireAll?: boolean; keep: number[]; keepLimit: number; trials?: number; seed?: number };
+export type MulliganSimulationInput = { cardCounts: Array<{ id: number; quantity: number }>; targets: number[]; requireAll?: boolean; keep: number[]; keepSets?: number[][]; keepLimit: number; trials?: number; seed?: number };
 
 function next(seed: number) { let value = seed | 0; value ^= value << 13; value ^= value >>> 17; value ^= value << 5; return value >>> 0; }
 
@@ -15,7 +15,8 @@ export function simulateMulligan(input: MulliganSimulationInput): MonteCarloResu
   for (let trial = 0; trial < trials; trial += 1) {
     const remaining = [...deck]; const hand: number[] = [];
     for (let index = 0; index < 4; index += 1) { state = next(state); hand.push(remaining.splice(state % remaining.length, 1)[0]); }
-    let kept = 0; const redraw = hand.map(card => keepSet.has(card) && kept++ < input.keepLimit ? card : null);
+    const setKeep = new Set((input.keepSets ?? []).filter(set => set.length && set.every(id => hand.includes(id))).flat());
+    let kept = 0; const redraw = hand.map(card => setKeep.has(card) || (keepSet.has(card) && kept++ < input.keepLimit) ? card : null);
     for (let index = 0; index < redraw.filter((card) => card === null).length; index += 1) { state = next(state); const card = remaining.splice(state % remaining.length, 1)[0]; const slot = redraw.indexOf(null); redraw[slot] = card; }
     const hits = redraw.filter((card) => card !== null && targetSet.has(card)).length;
     if (input.requireAll ? hits === targetSet.size : hits > 0) successes += 1;

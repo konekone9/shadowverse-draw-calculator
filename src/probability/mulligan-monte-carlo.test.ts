@@ -14,4 +14,8 @@ describe('simulateMulligan', () => {
     const base = { cardCounts: cards, targets: [1, 2], keep: [], keepLimit: 0, trials: 20_000, seed: 8 };
     expect(simulateMulligan({ ...base, requireAll: false }).probability).toBeGreaterThan(simulateMulligan({ ...base, requireAll: true }).probability);
   });
+  it('keeps a completed set even when the normal keep limit is zero', () => {
+    const input = { cardCounts: cards, targets: [1, 2], requireAll: true, keep: [], keepSets: [[1, 2]], keepLimit: 0, trials: 10_000, seed: 9 };
+    expect(simulateMulligan(input).probability).toBeGreaterThan(0);
+  });
 });
